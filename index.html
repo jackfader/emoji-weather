@@ -11,19 +11,15 @@ body {background-color: #81d4fa;font-family: Roboto, sans-serif;}
 .container {margin-top: 50px;}
 .emoji {font-size: 5rem;}
 .forecast {margin-top: 30px;}
-.forecast .col {display: flex;justify-content: center;align-items: center;flex-direction: column;padding: 10px;border: 1px solid #fff;border-radius: 5px;margin-bottom: 10px;}
-.footer {margin-top: 20px;}
-.refresh-btn {margin-bottom: 10px;}
-@media screen and (max-width: 600px) {
-  .forecast .col {margin-left: 5px;margin-right: 5px;}
-}
+.zip-container {margin-bottom: 15px;}
+.refresh-btn {margin-top: 15px;}
 </style>
 </head>
 <body>
 <div class="container">
   <div class="row"><div class="col s12 center-align"><h3>Emoji Weather Forecast</h3><div id="currentWeather" class="emoji"></div><p id="currentLocation"></p></div></div>
   <div class="row forecast" id="forecast"></div>
-  <div class="row"><div class="col s12 center-align footer"><button class="btn waves-effect waves-light refresh-btn" onclick="getLocation()">Refresh</button><p id="lastUpdated">Last updated: </p>  <p class="api-credit">Weather data provided by <a href="https://openweathermap.org/" target="_blank">OpenWeather API</a></p>
+  <div class="row"><div class="col s12 center-align"><div class="zip-container"><input type="text" id="zipCode" placeholder="Enter zip code"><button class="btn waves-effect waves-light" onclick="getWeatherByZip()">Get Weather by Zip</button></div><button class="btn waves-effect waves-light refresh-btn" onclick="getLocation()">Refresh</button><p id="lastUpdated">Last updated: </p>  <p class="api-credit">Weather data provided by <a href="https://openweathermap.org/" target="_blank">OpenWeather API</a></p>
 </div></div>
 </div>
 
@@ -40,14 +36,20 @@ function getLocation() {
   }
 }
 
-function fetchData(position) {
-  const lat = position.coords.latitude;
-  const lon = position.coords.longitude;
-  fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`)
+function getWeatherByZip() {
+  const zipCode = $('#zipCode').val();
+  if (zipCode) {
+    $('#forecast').empty();
+    fetchData(`https://api.openweathermap.org/data/2.5/weather?zip=${zipCode}&appid=${apiKey}`, `https://api.openweathermap.org/data/2.5/forecast?zip=${zipCode}&appid=${apiKey}`);
+  }
+}
+
+function fetchData(url1, url2) {
+  fetch(url1)
     .then(response => response.json())
     .then(displayCurrentWeather);
 
-  fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}`)
+  fetch(url2)
     .then(response => response.json())
     .then(displayForecast);
 }
@@ -59,15 +61,11 @@ $('#currentLocation').text(`Now - ${data.name}`);
 }
 
 function displayForecast(data) {
-  const forecasts = data.list.filter(forecast => {
-    const date = new Date(forecast.dt * 1000);
-    return date.getHours() === 8;
-  });
+  const forecasts = data.list.filter(forecast => new Date(forecast.dt * 1000).getHours() === 8);
 
   forecasts.forEach((forecast, i) => {
       const date = new Date(forecast.dt * 1000);
-      const weekday = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const dayName = weekday[date.getDay()];
+      const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()];
 
       $('#forecast').append(`<div class="col s2 ${i === 0 ? 'offset-s1' : ''} center-align"><div class="emoji">${emojiMap[forecast.weather[0].id.toString()[0]]}</div><p>${dayName}</p></div>`);
     });
