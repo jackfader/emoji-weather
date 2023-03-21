@@ -10,6 +10,7 @@
 body {background-color: #81d4fa;font-family: Roboto, sans-serif;}
 .container {margin-top: 50px;}
 .emoji {font-size: 5rem;}
+.activity-emoji {font-size: 2rem;}
 .forecast {margin-top: 30px;}
 .refresh-btn {margin-top: 15px;}
 @media (min-width: 600px) {
@@ -19,7 +20,7 @@ body {background-color: #81d4fa;font-family: Roboto, sans-serif;}
 </head>
 <body>
 <div class="container">
-  <div class="row"><div class="col s12 center-align"><h3>Emoji Weather Forecast</h3><div id="currentWeather" class="emoji"></div><p id="currentLocation"></p></div></div>
+  <div class="row"><div class="col s12 center-align"><h3>Emoji Weather Forecast</h3><div id="currentWeather" class="emoji"></div><p id="currentLocation"></p><p id="airQuality"></p></div></div>
   <div class="row forecast-container" id="forecast"></div>
   <div class="row"><div class="col s12 center-align"><button class="btn waves-effect waves-light refresh-btn" onclick="getLocation()">Refresh</button><p id="lastUpdated">Last updated: </p><p class="api-credit">Weather data provided by <a href="https://openweathermap.org/" target="_blank">OpenWeather API</a></p></div></div>
 </div>
@@ -29,6 +30,23 @@ body {background-color: #81d4fa;font-family: Roboto, sans-serif;}
 <script>
 const apiKey = '1e0c872c5b5e02218e4f65745eb58eb2';
 const emojiMap = {'2': '⛈️', '3': '🌧️', '5': '☔', '6': '❄️', '7': '🌫️', '800': '☀️', '8': '⛅'}
+const airQualityEmojiMap = {
+  1: '😃', // Good
+  2: '😊', // Fair
+  3: '😐', // Moderate
+  4: '😷', // Poor
+  5: '🤢'  // Very Poor
+};
+
+const activityEmojis = {
+  '2': '🎸⚡', // Thunderstorm: Play air guitar with lightning
+  '3': '🦆💃', // Drizzle: Dance like a duck in the drizzle
+  '5': '🌂🎤', // Rain: Sing in the rain with your umbrella
+  '6': '🐧🏂', // Snow: Pretend you're a penguin snowboarding
+  '7': '🧙‍♂️🔮', // Atmosphere: Practice your wizard spells at home
+  '800': '🤸‍♀️🌞', // Clear: Do cartwheels in the sun
+  '8': '🦸‍♂️🏢', // Clouds: Pretend to be a superhero flying through the clouds
+};
 
 function getLocation() {
   if (navigator.geolocation) {
@@ -48,26 +66,37 @@ function fetchData(position) {
   fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}`)
     .then(response => response.json())
     .then(displayForecast);
+
+  fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`)
+    .then(response => response.json())
+    .then(displayAirQuality);
 }
 
 function displayCurrentWeather(data) {
-  $('#currentWeather').text(emojiMap[data.weather[0].id.toString()[0]]);
-$('#currentLocation').text(`Now - ${data.name}`);
+  const weatherCode = data.weather[0].id.toString()[0];
+  $('#currentWeather').html(`${emojiMap[weatherCode]}<br>${activityEmojis[weatherCode]}`);
+  $('#currentLocation').text(`Now - ${data.name}`);
   $('#lastUpdated').text(`Last updated: ${new Date().toLocaleTimeString()}`);
 }
 
 function displayForecast(data) {
-  const forecasts = data.list.filter(forecast => new Date(forecast.dt * 1000).getHours() === 8);
+  const forecasts = data.list.filter(forecast => new Date(forecast.dt * 1000).getHours() === 11);
 
   forecasts.forEach((forecast, i) => {
     const date = new Date(forecast.dt * 1000);
     const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()];
+    const weatherCode = forecast.weather[0].id.toString()[0];
 
-    $('#forecast').append(`<div class="col s12 m6 l2 ${i === 0 ? 'offset-l1' : ''} center-align"><div class="emoji">${emojiMap[forecast.weather[0].id.toString()[0]]}</div><p>${dayName}</p></div>`);
+    $('#forecast').append(`<div class="col s12 m6 l2 ${i === 0 ? 'offset-l1' : ''} center-align"><div class="emoji">${emojiMap[weatherCode]}<br><span class="activity-emoji">${activityEmojis[weatherCode]}</span></div><p>${dayName}</p></div>`);
   });
 }
 
-getLocation();
+function displayAirQuality(data) {
+  const aqi = data.list[0].main.aqi;
+  $('#airQuality').text(`Air Quality: ${airQualityEmojiMap[aqi]}`);
+}
+
+getLocation(); // Call the function when the page loads.
 </script>
 </body>
 </html>
